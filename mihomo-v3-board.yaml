@@ -66,7 +66,7 @@ tun:
 # 嗅探设置
 sniffer:
   enable: true
-  # 开启会尝试去嗅探纯IP的数据包里的数据，防止一些内置doh的软件直接给出IP
+  # 默认为关闭，开启会尝试去嗅探纯IP的数据包里的数据，防止一些内置doh的软件直接给出IP
   parse-pure-ip: false
   override-destination: true
   sniff:
