@@ -13,6 +13,8 @@ payload:
   - DOMAIN-SUFFIX,ip.3322.net
   - DOMAIN,dsm.booom.uk
   - DOMAIN,wpad.booom.uk
+  - DOMAIN-SUFFIX,q1.com
+  - DOMAIN-SUFFIX,q1oa.com
   - DOMAIN-SUFFIX,xissyun.com
   - DOMAIN-SUFFIX,gdnyt.com
   - DOMAIN-SUFFIX,zhongxiang51.com
