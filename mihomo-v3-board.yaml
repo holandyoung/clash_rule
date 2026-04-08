@@ -1,3 +1,33 @@
+# ==================== 锚点配置 ====================
+# 规则提供者基础配置
+BehaviorDomain:    &BehaviorDomain    { type: http, behavior: domain, interval: 86400 }
+BehaviorIPCIDR:    &BehaviorIPCIDR    { type: http, behavior: ipcidr, interval: 86400 }
+BehaviorClassical: &BehaviorClassical { type: http, behavior: classical, interval: 86400 }
+BehaviorDomainMRS: &BehaviorDomainMRS { type: http, format: mrs, behavior: domain, interval: 86400 }
+BehaviorIPCIDRMRS: &BehaviorIPCIDRMRS { type: http, format: mrs, behavior: ipcidr, interval: 86400 }
+
+
+
+# 策略组类型基础配置
+BaseUT: &BaseUT { type: url-test, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
+BaseFB: &BaseFB { type: fallback, url: "https://www.gstatic.com/generate_204", interval: 120, tolerance: 300 }
+BaseLB: &BaseLB { type: load-balance, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
+
+# 节点筛选正则表达式
+FilterNode:        &FilterNode        /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
+FilterNodeNoX:     &FilterNodeNoX     /^(?!.*(X|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
+FilterCloudMatch:  &FilterCloudMatch  /.*(0.4|0.5|0.6|CO|co).*/
+FilterCloudReject: &FilterCloudReject /^(?!.*(0.4|0.5|0.6|CO|co|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
+
+FilterX:  &FilterX  /.*(x|X).*/
+FilterHK: &FilterHK /.*(港|HK|hk|🇭🇰).*/
+FilterTW: &FilterTW /.*(台|TW|tw|🇹🇼).*/
+FilterSG: &FilterSG /.*(坡|SG|sg|🇸🇬).*/
+FilterJP: &FilterJP /.*(日|JP|jp|🇯🇵).*/
+FilterUS: &FilterUS /.*(美|US|us|🇺🇸).*/
+# =================================================
+
+
 listeners:
   - name: mixed1
     type: mixed
@@ -8,89 +38,74 @@ listeners:
     port: 45002
     proxy: 🇹🇼台湾Seednet|家宽|Socks|127.0.0.1:45002 x3
 
+mode: rule
 port: 7890
 socks-port: 7891
+#只适用于软路由/Linux的iptables做透明代理使用
+#redir-port: 7892
 mixed-port: 7893
-tproxy-port: 7894
-allow-lan: false 
-mode: rule
-bind-address: "*"
+#只适用于软路由/Linux的iptables做透明代理使用
+#tproxy-port: 7895
 ipv6: true
-log-level: warning
-
-# 延迟与并发
+allow-lan: false
 unified-delay: true
 tcp-concurrent: true
+log-level: warning
+bind-address: '*'
+find-process-mode: 'always'
+keep-alive-interval: 15
+keep-alive-idle: 600
 
-# 进程匹配模式
-find-process-mode: strict
-global-client-fingerprint: safari
+# 认证配置
+authentication:
+  - mihomo:gulu
+skip-auth-prefixes:
+- 127.0.0.0/8
+- 172.16.0.0/12
+- 192.168.0.0/16
 
-# 移动端保活优化
-keep-alive-interval: 1800
-keep-alive-idle: 15
+# 实验性功能
+experimental:
+  quic-go-disable-gso: true
+  quic-go-disable-ecn: false
+     
+# 管理面板配置
+external-ui-url: https://github.com/Zephyruso/zashboard/releases/latest/download/dist.zip
+external-ui-name: zashboard
+external-ui: ui
+external-controller: 127.0.0.1:9090
+secret: gulu
 
+# 配置存储
 profile:
   store-selected: true
   store-fake-ip: true
 
-# Geo 数据库设置
-geodata-mode: true
-geo-auto-update: true
-geo-update-interval: 24
-geox-url:
-  geoip: "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat"
-  geosite: "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat"
-  mmdb: "https://cdn.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country.mmdb"
-  asn: "https://cdn.jsdelivr.net/gh/Loyalsoldier/geoip@release/GeoLite2-ASN.mmdb"
-
-ntp:
-  enable: true
-  write-to-system: false
-  server: time.apple.com
-  port: 123
-  interval: 120
-
-tun:
-  enable: true
-  stack: system 
-  dns-hijack:
-    - any:53
-  auto-route: true
-  strict-route: true
-  mtu: 9000
-  auto-detect-interface: true
-  # 排除常见内网网段
-  route-exclude-address: [192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12, fc00::/7]
-
-# 嗅探设置
+# 流量嗅探
 sniffer:
   enable: true
-  # 默认为关闭，开启会尝试去嗅探纯IP的数据包里的数据，防止一些内置doh的软件直接给出IP
-  parse-pure-ip: false
-  override-destination: true
   sniff:
-    QUIC:
-      ports: [443, 853, 8443]
-    TLS:
-      ports: [443, 853, 8443]
     HTTP:
-      ports: [80, 8000-8888]
+      ports: [80, 8080-8880]
+      override-destination: true
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
   skip-domain:
     - "Mijia Cloud"
     - "+.push.apple.com"
 
-hosts:
-  dns.google:
-    - 8.8.8.8
-    - 8.8.4.4
-    - 2001:4860:4860::8888
-    - 2001:4860:4860::8844
-  dns.alidns.com:
-    - 223.5.5.5
-    - 223.6.6.6
-    - 2400:3200::1
-    - 2400:3200:baba::1
+# TUN模式配置
+tun:
+  enable: false
+  stack: mixed
+  dns-hijack:
+    - "any:53"
+    - "tcp://any:53"
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
 
 dns:
   enable: true
@@ -99,14 +114,12 @@ dns:
   use-system-hosts: true
   ipv6: true
   listen: 0.0.0.0:1053
-  
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16 
-  
   fake-ip-filter-mode: blacklist
   fake-ip-filter:
     - "+.lan"
-    - "rule-set:direct,steamcn,gamedownloadcn,coolapk,apple,ntp,privatetracker,cnmax"
+    - "rule-set:fcm,lan,direct,steamcn,gamedownloadcn,coolapk,apple,ntp,privatetracker,cnmax"
     - "+.local"
     - "*.localdomain"
     - "+.miwifi.com"
@@ -125,504 +138,87 @@ dns:
     - "+.tencent.com"
     - "+.doh.pub"
     - "sm2.doh.pub"
-    - "qlogo.cn"
-    - "*.qlogo.cn"
+    - "+.qlogo.cn"
     - "connect.rom.miui.com"
     - "WORKGROUP"
     - "localhost.ptlogin2.qq.com"
-    - "+.market.xiaomi.com"
     - "+.cmbchina.com"
     - "+.cmbimg.com"
     - "*.mcdn.bilivideo.cn"
     - "+.apple.com"
     - "*.httpdns.qcloud.com"
+    - "+.docker.io"
+    - "+.market.xiaomi.com"
+    - "+.push.apple.com"
 
   nameserver:
     - https://223.5.5.5/dns-query#🎯 全球直连
     - https://doh.pub/dns-query#🎯 全球直连
 
-    
-  # 用于解析 DoH 域名的 Bootstrap DNS
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
-    
-  # 专门用于解析节点域名的 DNS
-  proxy-server-nameserver:
-    - https://223.5.5.5/dns-query#🎯 全球直连
-    - https://doh.pub/dns-query#🎯 全球直连
-    
-  # 专门用于 Direct 出口的 DNS
-  direct-nameserver:
-    - https://223.5.5.5/dns-query#🎯 全球直连
-    - https://doh.pub/dns-query#🎯 全球直连
-    
-  direct-nameserver-follow-policy: true
-  
+
   nameserver-policy:
     "rule-set:lan,direct,steamcn,gamedownloadcn,coolapk,apple,ntp,privatetracker,cnmax":
       - https://223.5.5.5/dns-query#🎯 全球直连
       - https://doh.pub/dns-query#🎯 全球直连
 
-rule-providers:
-  lan:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Lan/Lan.yaml"
-    path: ./ruleset/Lan.yaml
-    interval: 86400  
 
-  direct:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/Direct.yaml"
-    path: ./ruleset/Direct.yaml
-    interval: 86400  
-
-  global:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/global.yaml"
-    path: ./ruleset/global.yaml
-    interval: 86400  
-
-  cnmax:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/ChinaMax/ChinaMax_Classical.yaml"
-    path: ./ruleset/ChinaMax_Classical.yaml
-    interval: 86400  
-
-  cnip:
-    type: http
-    behavior: ipcidr
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/ChinaIPs/ChinaIPs_IP.yaml"
-    path: ./ruleset/ChinaIPs_IP.yaml
-    interval: 86400  
-
-  global-stun:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/STUN/STUN.yaml"
-    path: ./ruleset/STUN.yaml
-    interval: 86400  
-
-  fcm:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GoogleFCM/GoogleFCM.yaml"
-    path: ./ruleset/GoogleFCM.yaml
-    interval: 86400
-    
-  steamcn:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/SteamCN/SteamCN.yaml"
-    path: ./ruleset/SteamCN.yaml
-    interval: 86400
-    
-  coolapk:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Coolapk/Coolapk.yaml"
-    path: ./ruleset/Coolapk.list
-    interval: 86400
-
-  apple:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Apple/Apple_Classical.yaml"
-    path: ./ruleset/Apple_Classical.yaml
-    interval: 86400
-
-  ntp:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/NTPService/NTPService.yaml"
-    path: ./ruleset/NTPService.yaml
-    interval: 86400
-
-  privatetracker:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PrivateTracker/PrivateTracker.yaml"
-    path: ./ruleset/PrivateTracker.yaml
-    interval: 86400
-
-  bilibili:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/BiliBili/BiliBili.yaml"
-    path: ./ruleset/BiliBili.yaml
-    interval: 86400
-
-  bilibiliintl:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/BiliBiliIntl/BiliBiliIntl.yaml"
-    path: ./ruleset/BiliBiliIntl.yaml
-    interval: 86400
-
-  youtube:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTube/YouTube.yaml"
-    path: ./ruleset/YouTube.yaml
-    interval: 86400
-
-  youtubemusic:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/YouTubeMusic/YouTubeMusic.yaml"
-    path: ./ruleset/YouTubeMusic.yaml
-    interval: 86400
-
-  google:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Google/Google.yaml"
-    path: ./ruleset/Google.yaml
-    interval: 86400
-
-  microsoft:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Microsoft/Microsoft.yaml"
-    path: ./ruleset/Microsoft.yaml
-    interval: 86400
-
-  netflix:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Netflix/Netflix.yaml"
-    path: ./ruleset/Netflix.yaml
-    interval: 86400
-
-  disney:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Disney/Disney.yaml"
-    path: ./ruleset/Disney.yaml
-    interval: 86400
-
-  hbo:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/HBO/HBO.yaml"
-    path: ./ruleset/HBO.yaml
-    interval: 86400
-
-  primevideo:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PrimeVideo/PrimeVideo.yaml"
-    path: ./ruleset/PrimeVideo.yaml
-    interval: 86400
-    
-  bahamut:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Bahamut/Bahamut.yaml"
-    path: ./ruleset/Bahamut.yaml
-    interval: 86400
-
-  kktv:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/KKTV/KKTV.yaml"
-    path: ./ruleset/KKTV.yaml
-    interval: 86400
-
-  linetv:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/LineTV/LineTV.yaml"
-    path: ./ruleset/LineTV.yaml
-    interval: 86400
-
-  openai:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OpenAI/OpenAI.yaml"
-    path: ./ruleset/OpenAI.yaml
-    interval: 86400
-
-  gemeni:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Gemini/Gemini.yaml"
-    path: ./ruleset/Gemini.yaml
-    interval: 86400
-
-  onedrive:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OneDrive/OneDrive.yaml"
-    path: ./ruleset/OneDrive.yaml
-    interval: 86400
-
-  googledrive:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GoogleDrive/GoogleDrive.yaml"
-    path: ./ruleset/GoogleDrive.yaml
-    interval: 86400
-
-  dropbox:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Dropbox/Dropbox.yaml"
-    path: ./ruleset/Dropbox.yaml
-    interval: 86400
-
-  mega:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/MEGA/MEGA.yaml"
-    path: ./ruleset/MEGA.yaml
-    interval: 86400
-
-  pikpak:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/PikPak/PikPak.yaml"
-    path: ./ruleset/PikPak.yaml
-    interval: 86400
-
-
-  terabox:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/TeraBox/TeraBox.yaml"
-    path: ./ruleset/TeraBox.yaml
-    interval: 86400
-
-
-  telegram:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Telegram/Telegram.yaml"
-    path: ./ruleset/Telegram.yaml
-    interval: 86400
-
-  line:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Line/Line.yaml"
-    path: ./ruleset/Line.yaml
-    interval: 86400
-
-  whatsapp:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Whatsapp/Whatsapp.yaml"
-    path: ./ruleset/Whatsapp.yaml
-    interval: 86400
-
-  tiktok:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/TikTok/TikTok.yaml"
-    path: ./ruleset/TikTok.yaml
-    interval: 86400
-
-  github:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/GitHub/GitHub.yaml"
-    path: ./ruleset/GitHub.yaml
-    interval: 86400
-
-  speedtest:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Speedtest/Speedtest.yaml"
-    path: ./ruleset/Speedtest.yaml
-    interval: 86400   
-
-  pay:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/pay.yaml"
-    path: ./ruleset/pay.yaml
-    interval: 86400       
-
-  visa:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/VISA/VISA.yaml"
-    path: ./ruleset/VISA.yaml
-    interval: 86400   
- 
-  blockchain:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/blockchain.yaml"
-    path: ./ruleset/blockchain.yaml
-    interval: 86400
-
-  okx:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/OKX/OKX.yaml"
-    path: ./ruleset/OKX.yaml
-    interval: 86400   
-
-  binance:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Binance/Binance.yaml"
-    path: ./ruleset/Binance.yaml
-    interval: 86400   
-
-  global-game:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/global-game.yaml"
-    path: ./ruleset/global-game.yaml
-    interval: 86400 
-
-  game:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Game/Game.yaml"
-    path: ./ruleset/Game.yaml
-    interval: 86400
-
-  crypto:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Crypto/Crypto.yaml"
-    path: ./ruleset/Crypto.yaml
-    interval: 86400
-
-  gamedownloadcn:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Game/GameDownloadCN/GameDownloadCN.yaml"
-    path: ./ruleset/GameDownloadCN.yaml
-    interval: 86400 
-
-  ad-whitelist:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/ad-whitelist.yaml"
-    path: ./ruleset/ad-whitelist.yaml
-    interval: 86400
-
-  ad:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/ad.yaml"
-    path: ./ruleset/ad.yaml
-    interval: 86400
-
-  advertising-lite:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/AdvertisingLite/AdvertisingLite_Classical.yaml"
-    path: ./ruleset/AdvertisingLite_Classical.yaml
-    interval: 86400
-
-  advertising:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Advertising/Advertising_Classical.yaml"
-    path: ./ruleset/Advertising_Classical.yaml
-    interval: 86400
-
-  block-httpdns:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/BlockHttpDNS/BlockHttpDNS.yaml"
-    path: ./ruleset/BlockHttpDNS.yaml
-    interval: 86400
-
-  privacy:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Privacy/Privacy_Classical.yaml"
-    path: ./ruleset/Privacy_Classical.yaml
-    interval: 86400
-
-  hijacking:
-    type: http
-    behavior: classical
-    url: "https://cdn.jsdelivr.net/gh/blackmatrix7/ios_rule_script@master/rule/Clash/Hijacking/Hijacking.yaml"
-    path: ./ruleset/Hijacking.yaml
-    interval: 86400
-
-  anti-ad-clash:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/privacy-protection-tools/anti-AD@master/anti-ad-clash.yaml"
-    path: ./ruleset/anti-ad-clash.yaml
-    interval: 86400
-
-  anti-ad-white-for-clash:
-    type: http
-    behavior: domain
-    url: "https://cdn.jsdelivr.net/gh/privacy-protection-tools/dead-horse@master/anti-ad-white-for-clash.yaml"
-    path: ./ruleset/anti-ad-white-for-clash.yaml
-    interval: 86400
 
 proxies:
 
-
+# ==================== 策略组 ====================
 proxy-groups:
 
   # 🚀 通用分流选择
-  - { name: "🚀 节点选择",   type: select,       proxies: ["♻️ 自动选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", "🔯 故障转移","🔮 负载均衡", /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
+  - { name: "🚀 节点选择", type: select, proxies: ["♻️ 自动选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", "🔯 故障转移","🔮 负载均衡", *FilterNode] }
 
   # 📹 视频类分组
-  - { name: "📹 油管视频",   type: select,       proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
-  - { name: "🎥 流媒体解锁", type: select,       proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
-  - { name: "📺 台湾流媒体", type: select,       proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡", /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
-  - { name: "📺 哔哩哔哩",   type: select,       proxies: ["🎯 全球直连","🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
+  - { name: "📹 油管视频", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "🎥 Netflix", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "🎥 Disney", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "🎥 HBO", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "📺 哔哩哔哩",   type: select, proxies: ["🎯 全球直连","🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
 
   # Ⓜ️ 国外网盘 需要消耗较大的流量
-  - { name: "Ⓜ️ 国外云盘",     type: select,    proxies: [/.*(0.4|0.5|0.6|CO|co).*/,"🚀 节点选择","🎯 全球直连", /^(?!.*(0.4|0.5|0.6|CO|co|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
-
+  - { name: "Ⓜ️ 国外云盘", type: select, proxies: [*FilterCloudMatch, "🚀 节点选择", "🎯 全球直连", *FilterCloudReject] }
 
   # 🎮 特殊用途
-  - { name: "🎮 游戏加速",   type: select,       proxies: ["🚀 节点选择","🎯 全球直连","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡", /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
-  - { name: "💬 OpenAi",     type: select,       proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡", /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
-  - { name: "💵 区块链",     type: select,       proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇹🇼 台湾","🇸🇬 新加坡","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡","🚀 节点选择","🇭🇰 香港", /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
+  - { name: "🎮 游戏加速", type: select, proxies: ["🚀 节点选择","🎯 全球直连","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡", *FilterNode] }
+  - { name: "💵 区块链",   type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇹🇼 台湾","🇸🇬 新加坡","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡","🚀 节点选择","🇭🇰 香港", *FilterNode] }
 
-  # ♻️ 智能策略
-  - { name: "♻️ 自动选择",   type: url-test,    proxies: [/.*(x|X).*/], url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
-  - { name: "🔯 故障转移",   type: fallback,    proxies: [/.*(x|X).*/], url: "https://www.gstatic.com/generate_204", interval: 120, tolerance: 300 }
-  - { name: "🔮 负载均衡",   type: load-balance,proxies: [/.*(x|X).*/], url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
+  # ♻️ 智能策略 (调用基础锚点)
+  - { name: "♻️ 自动选择", <<: *BaseUT, proxies: [*FilterX] }
+  - { name: "🔯 故障转移", <<: *BaseFB, proxies: [*FilterX] }
+  - { name: "🔮 负载均衡", <<: *BaseLB, proxies: [*FilterX] }
 
   # 🌍 地区分组
-  - { name: "🇭🇰 香港",     type: url-test,    proxies: [/.*(港|HK|hk|🇭🇰).*/], url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 100 }
-  - { name: "🇹🇼 台湾",     type: url-test,    proxies: [/.*(台|TW|tw|🇹🇼).*/], url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
-  - { name: "🇸🇬 新加坡",   type: url-test,    proxies: [/.*(坡|SG|sg|🇸🇬).*/], url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
-  - { name: "🇯🇵 日本",     type: url-test,    proxies: [/.*(日|JP|jp|🇯🇵).*/], url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
-  - { name: "🇺🇲 美国",     type: url-test,    proxies: [/.*(美|US|us|🇺🇸).*/], url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
+  - { name: "🇭🇰 香港",   <<: *BaseUT, tolerance: 100, proxies: [*FilterHK] }
+  - { name: "🇹🇼 台湾",   <<: *BaseUT, proxies: [*FilterTW] }
+  - { name: "🇸🇬 新加坡", <<: *BaseUT, proxies: [*FilterSG] }
+  - { name: "🇯🇵 日本",   <<: *BaseUT, proxies: [*FilterJP] }
+  - { name: "🇺🇲 美国",   <<: *BaseUT, proxies: [*FilterUS] }
   
-  - { name: "🎯 全球直连", type: select, proxies: ["DIRECT", /^(?!.*(X|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
+  - { name: "🎯 全球直连", type: select, proxies: ["DIRECT", *FilterNodeNoX] }
+  - { name: "🛑 广告/追踪拦截", type: select, proxies: ["REJECT", *FilterNodeNoX] }
 
-  - { name: "🛑 广告/追踪拦截", type: select, proxies: ["REJECT", /^(?!.*(X|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/] }
-
-
+# ==================== 规则 ====================
 rules:
   - RULE-SET,lan,🎯 全球直连,no-resolve
+  - RULE-SET,lan-ip,🎯 全球直连,no-resolve
   - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
   - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
   - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
   - RULE-SET,global,🚀 节点选择,no-resolve
 
-  # 1. 如果 [命中 ad-cn 或者 anti-ad 白名单] 且 [是国内域名] -> 直连
-  - AND,((OR,((RULE-SET,ad-whitelist),(RULE-SET,anti-ad-white-for-clash))),(GEOSITE,CN)),🎯 全球直连
-  # 2. 经过上面过滤后，剩下的 [命中 ad-cn 或者 anti-ad 白名单] 的流量 -> 代理
-  - OR,((RULE-SET,ad-whitelist),(RULE-SET,anti-ad-white-for-clash)),🚀 节点选择
-  
+  - RULE-SET,ad-whitelist,🎯 全球直连,no-resolve
+
   - RULE-SET,ad,🛑 广告/追踪拦截,no-resolve
   - RULE-SET,privacy,🛑 广告/追踪拦截,no-resolve
   - RULE-SET,hijacking,🛑 广告/追踪拦截,no-resolve
   - RULE-SET,block-httpdns,🛑 广告/追踪拦截,no-resolve
-  - RULE-SET,anti-ad-clash,🛑 广告/追踪拦截,no-resolve
+  - RULE-SET,anti-ad-mihomo,🛑 广告/追踪拦截,no-resolve
 
   - RULE-SET,fcm,🚀 节点选择,no-resolve
   - RULE-SET,direct,🎯 全球直连,no-resolve
@@ -631,30 +227,24 @@ rules:
   - RULE-SET,coolapk,🎯 全球直连,no-resolve
   - RULE-SET,apple,🎯 全球直连,no-resolve
 
-  #tg优化
+  # tg优化
   - IP-CIDR,95.161.76.100/31,REJECT,no-resolve
   
-  # 防止网站使用 QUIC 导致速度不佳或者断流的情况, 禁用 443 端口 UDP 流量（不包括国内）
-  # - AND,((NETWORK,UDP),(DST-PORT,443)),REJECT
-  
   - RULE-SET,youtube,📹 油管视频,no-resolve
+  - RULE-SET,youtube-ip,📹 油管视频,no-resolve
   - RULE-SET,youtubemusic,📹 油管视频,no-resolve
   
-  - RULE-SET,openai,💬 OpenAi,no-resolve
-  - RULE-SET,gemeni,💬 OpenAi,no-resolve
- 
-  - RULE-SET,netflix,🎥 流媒体解锁,no-resolve
-  - RULE-SET,disney,🎥 流媒体解锁,no-resolve
-  - RULE-SET,hbo,🎥 流媒体解锁,no-resolve
-  - RULE-SET,primevideo,🎥 流媒体解锁,no-resolve
-  - RULE-SET,tiktok,🎥 流媒体解锁,no-resolve
+  - RULE-SET,openai,🚀 节点选择,no-resolve
+  - RULE-SET,gemeni,🚀 节点选择,no-resolve
+  - RULE-SET,anthropic,🚀 节点选择,no-resolve
 
-  - RULE-SET,bahamut,📺 台湾流媒体,no-resolve
-  - RULE-SET,kktv,📺 台湾流媒体,no-resolve
-  - RULE-SET,linetv,📺 台湾流媒体,no-resolve
+  - RULE-SET,netflix,🎥 Netflix,no-resolve
+  - RULE-SET,netflix-ip,🎥 Netflix,no-resolve
+  - RULE-SET,disney,🎥 Disney,no-resolve
+  - RULE-SET,hbo,🎥 HBO,no-resolve
   
   - RULE-SET,bilibiliintl,📺 哔哩哔哩,no-resolve
-  - RULE-SET,bilibili,📺 哔哩哔哩  ,no-resolve
+  - RULE-SET,bilibili,📺 哔哩哔哩,no-resolve
   
   - RULE-SET,onedrive,Ⓜ️ 国外云盘,no-resolve
   - RULE-SET,googledrive,Ⓜ️ 国外云盘,no-resolve
@@ -664,30 +254,96 @@ rules:
   - RULE-SET,terabox,Ⓜ️ 国外云盘,no-resolve
 
   - RULE-SET,telegram,🚀 节点选择,no-resolve
+  - RULE-SET,telegram-ip,🚀 节点选择,no-resolve
   - RULE-SET,line,🚀 节点选择,no-resolve
   - RULE-SET,whatsapp,🚀 节点选择,no-resolve
   - RULE-SET,github,🚀 节点选择,no-resolve
   - RULE-SET,speedtest,🚀 节点选择,no-resolve
-  - RULE-SET,pay,🚀 节点选择,no-resolve
-  - RULE-SET,visa,🚀 节点选择,no-resolve
   - RULE-SET,google,🚀 节点选择,no-resolve
+  - RULE-SET,google-ip,🚀 节点选择,no-resolve
   - RULE-SET,microsoft,🚀 节点选择,no-resolve
 
-  - RULE-SET,blockchain,💵 区块链,no-resolve
-  - RULE-SET,okx,💵 区块链,no-resolve
-  - RULE-SET,binance,💵 区块链,no-resolve
   - RULE-SET,crypto,💵 区块链,no-resolve
 
   - RULE-SET,ntp,🎯 全球直连,no-resolve
   - RULE-SET,privatetracker,🎯 全球直连,no-resolve
   
-  #用于检测nat类型，国内的stun已单独放入direct中
+  # 用于检测nat类型，国内的stun已单独放入direct中
   - RULE-SET,global-stun,🚀 节点选择,no-resolve
 
-  - RULE-SET,cnmax,🎯 全球直连
+  - RULE-SET,cnmax,🎯 全球直连,no-resolve
+  - RULE-SET,cnmax-ip,🎯 全球直连,no-resolve
 
-  #游戏
+  # 游戏
   - RULE-SET,global-game,🎮 游戏加速,no-resolve
-  - RULE-SET,game,🎮 游戏加速
-  
+  - RULE-SET,game,🎮 游戏加速,no-resolve
+  - RULE-SET,game-ip,🎮 游戏加速,no-resolve
+
   - MATCH,🚀 节点选择
+
+
+
+
+# ==================== 规则提供者 ====================
+rule-providers:
+  lan:                     { <<: *BehaviorDomainMRS,    path: ./ruleset/Lan_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Lan/Lan_OCD_Domain.mrs" }
+  lan-ip:                  { <<: *BehaviorIPCIDRMRS,    path: ./ruleset/Lan_OCD_IP.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Lan/Lan_OCD_IP.mrs" }
+  direct:                  { <<: *BehaviorClassical, path: ./ruleset/Direct.yaml, url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/Direct.yaml" }
+  global:                  { <<: *BehaviorClassical, path: ./ruleset/global.yaml, url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/global.yaml" }
+  cnmax:                   { <<: *BehaviorDomainMRS,    path: ./ruleset/ChinaMax_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/ChinaMax/ChinaMax_OCD_Domain.mrs" }
+  cnmax-ip:                { <<: *BehaviorIPCIDRMRS,    path: ./ruleset/ChinaMax_OCD_IP.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/ChinaMax/ChinaMax_OCD_IP.mrs" }
+  global-stun:             { <<: *BehaviorDomainMRS,    path: ./ruleset/STUN_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/STUN/STUN_OCD_Domain.mrs" }
+  fcm:                     { <<: *BehaviorDomainMRS,    path: ./ruleset/GoogleFCM_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/GoogleFCM/GoogleFCM_OCD_Domain.mrs" }
+  steamcn:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/SteamCN_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/SteamCN/SteamCN_OCD_Domain.mrs" }
+  coolapk:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/Coolapk_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Coolapk/Coolapk_OCD_Domain.mrs" }
+  apple:                   { <<: *BehaviorDomainMRS,    path: ./ruleset/Apple_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Apple/Apple_OCD_Domain.mrs" }
+  ntp:                     { <<: *BehaviorDomainMRS,    path: ./ruleset/NTPService_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/NTPService/NTPService_OCD_Domain.mrs" }
+  privatetracker:          { <<: *BehaviorDomainMRS,    path: ./ruleset/PrivateTracker_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/PrivateTracker/PrivateTracker_OCD_Domain.mrs" }
+  bilibili:                { <<: *BehaviorDomainMRS,    path: ./ruleset/BiliBili_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/BiliBili/BiliBili_OCD_Domain.mrs" }
+  bilibiliintl:            { <<: *BehaviorDomainMRS,    path: ./ruleset/BiliBiliIntl_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/BiliBiliIntl/BiliBiliIntl_OCD_Domain.mrs" }
+  youtube:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/YouTube_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/YouTube/YouTube_OCD_Domain.mrs" }
+  youtube-ip:              { <<: *BehaviorIPCIDRMRS,    path: ./ruleset/YouTube_OCD_IP.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/YouTube/YouTube_OCD_IP.mrs" }
+  youtubemusic:            { <<: *BehaviorDomainMRS,    path: ./ruleset/YouTubeMusic_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/YouTubeMusic/YouTubeMusic_OCD_Domain.mrs" }
+  google:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/Google_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Google/Google_OCD_Domain.mrs" }
+  google-ip:               { <<: *BehaviorIPCIDRMRS,    path: ./ruleset/Google_OCD_IP.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Google/Google_OCD_IP.mrs" }
+  microsoft:               { <<: *BehaviorDomainMRS,    path: ./ruleset/Microsoft_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Microsoft/Microsoft_OCD_Domain.mrs" }
+  netflix:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/Netflix_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Netflix/Netflix_OCD_Domain.mrs" }
+  netflix-ip:              { <<: *BehaviorIPCIDRMRS,    path: ./ruleset/Netflix_OCD_IP.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Netflix/Netflix_OCD_IP.mrs" }
+  disney:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/Disney_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Disney/Disney_OCD_Domain.mrs" }
+  hbo:                     { <<: *BehaviorDomainMRS,    path: ./ruleset/HBO_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/HBO/HBO_OCD_Domain.mrs" }
+  # primevideo:              { <<: *BehaviorDomainMRS,    path: ./ruleset/PrimeVideo_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/PrimeVideo/PrimeVideo_OCD_Domain.mrs" }
+  # bahamut:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/Bahamut_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Bahamut/Bahamut_OCD_Domain.mrs" }
+  # kktv:                    { <<: *BehaviorDomainMRS,    path: ./ruleset/KKTV_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/KKTV/KKTV_OCD_Domain.mrs" }
+  # linetv:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/LineTV_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/LineTV/LineTV_OCD_Domain.mrs" }
+  openai:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/OpenAI_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/OpenAI/OpenAI_OCD_Domain.mrs" }
+  anthropic:               { <<: *BehaviorDomainMRS,    path: ./ruleset/Anthropic_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Anthropic/Anthropic_OCD_Domain.mrs" }
+  gemeni:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/Gemini_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Gemini/Gemini_OCD_Domain.mrs" }
+  onedrive:                { <<: *BehaviorDomainMRS,    path: ./ruleset/OneDrive_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/OneDrive/OneDrive_OCD_Domain.mrs" }
+  googledrive:             { <<: *BehaviorDomainMRS,    path: ./ruleset/GoogleDrive_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/GoogleDrive/GoogleDrive_OCD_Domain.mrs" }
+  dropbox:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/Dropbox_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Dropbox/Dropbox_OCD_Domain.mrs" }
+  mega:                    { <<: *BehaviorDomainMRS,    path: ./ruleset/MEGA_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/MEGA/MEGA_OCD_Domain.mrs" }
+  pikpak:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/PikPak_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/PikPak/PikPak_OCD_Domain.mrs" }
+  terabox:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/TeraBox_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/TeraBox/TeraBox_OCD_Domain.mrs" }
+  telegram:                { <<: *BehaviorDomainMRS,    path: ./ruleset/Telegram_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Telegram/Telegram_OCD_Domain.mrs" }
+  telegram-ip:             { <<: *BehaviorIPCIDRMRS,    path: ./ruleset/Telegram_OCD_IP.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Telegram/Telegram_OCD_IP.mrs" }
+  line:                    { <<: *BehaviorDomainMRS,    path: ./ruleset/Line_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Line/Line_OCD_Domain.mrs" }
+  whatsapp:                { <<: *BehaviorDomainMRS,    path: ./ruleset/Whatsapp_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Whatsapp/Whatsapp_OCD_Domain.mrs" }
+  # tiktok:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/TikTok_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/TikTok/TikTok_OCD_Domain.mrs" }
+  github:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/GitHub_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/GitHub/GitHub_OCD_Domain.mrs" }
+  speedtest:               { <<: *BehaviorDomainMRS,    path: ./ruleset/Speedtest_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Speedtest/Speedtest_OCD_Domain.mrs" }
+  # pay:                     { <<: *BehaviorClassical, path: ./ruleset/pay.yaml, url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/pay.yaml" }
+  # visa:                    { <<: *BehaviorDomainMRS,    path: ./ruleset/VISA_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/VISA/VISA_OCD_Domain.mrs" }
+  # blockchain:              { <<: *BehaviorClassical, path: ./ruleset/blockchain.yaml, url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/blockchain.yaml" }
+  # okx:                     { <<: *BehaviorDomainMRS,    path: ./ruleset/OKX_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/OKX/OKX_OCD_Domain.mrs" }
+  # binance:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/Binance_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Binance/Binance_OCD_Domain.mrs" }
+  global-game:             { <<: *BehaviorClassical, path: ./ruleset/global-game.yaml, url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/global-game.yaml" }
+  game:                    { <<: *BehaviorDomainMRS,    path: ./ruleset/Game_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Game/Game_OCD_Domain.mrs" }
+  game-ip:                 { <<: *BehaviorIPCIDRMRS,    path: ./ruleset/Game_OCD_IP.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Game/Game_OCD_IP.mrs" }
+  crypto:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/Crypto_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Crypto/Crypto_OCD_Domain.mrs" }
+  gamedownloadcn:          { <<: *BehaviorDomainMRS,    path: ./ruleset/GameDownloadCN_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Game/GameDownloadCN/GameDownloadCN_OCD_Domain.mrs" }
+  ad-whitelist:            { <<: *BehaviorDomain,    path: ./ruleset/ad-whitelist.yaml, url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/ad-whitelist.yaml" }
+  ad:                      { <<: *BehaviorClassical, path: ./ruleset/ad.yaml, url: "https://cdn.jsdelivr.net/gh/holandyoung/clash_rule@main/rules/ad.yaml" }
+  block-httpdns:           { <<: *BehaviorDomainMRS,    path: ./ruleset/BlockHttpDNS_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/BlockHttpDNS/BlockHttpDNS_OCD_Domain.mrs" }
+  privacy:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/Privacy_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Privacy/Privacy_OCD_Domain.mrs" }
+  hijacking:               { <<: *BehaviorDomainMRS,    path: ./ruleset/Hijacking_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Hijacking/Hijacking_OCD_Domain.mrs" }
+  anti-ad-mihomo:          { <<: *BehaviorDomainMRS,    path: ./ruleset/anti-ad-mihomo.mrs, url: "https://anti-ad.net/mihomo.mrs" }
