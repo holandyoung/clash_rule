@@ -1,3 +1,8 @@
 payload:
+#美团
   - DOMAIN,dnspod.meituan.httpdns.qcloud.com
   - DOMAIN-SUFFIX,httpdns.qcloud.com
+#淘宝
+  - DOMAIN,test.xquic.com
+#微信
+  - DOMAIN,marscdnbypass-wxapp.tc.qq.com
