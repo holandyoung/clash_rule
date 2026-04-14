@@ -285,7 +285,7 @@ rules:
   - RULE-SET,game-ip,🎮 游戏加速,no-resolve
 
   - RULE-SET,cnmax,🎯 全球直连,no-resolve
-  - RULE-SET,cnmax-ip,🎯 全球直连
+  - RULE-SET,cnmax-ip,🎯 全球直连,no-resolve
 
 
   - MATCH,🚀 节点选择
