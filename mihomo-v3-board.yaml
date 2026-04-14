@@ -14,10 +14,11 @@ BaseFB: &BaseFB { type: fallback, url: "https://www.gstatic.com/generate_204", i
 BaseLB: &BaseLB { type: load-balance, url: "https://www.gstatic.com/generate_204", interval: 300, tolerance: 250 }
 
 # 节点筛选正则表达式
-FilterNode:        &FilterNode        /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
-FilterNodeNoX:     &FilterNodeNoX     /^(?!.*(X|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
-FilterCloudMatch:  &FilterCloudMatch  /.*(0.4|0.5|0.6|CO|co).*/
-FilterCloudReject: &FilterCloudReject /^(?!.*(0.4|0.5|0.6|CO|co|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
+FilterNode:           &FilterNode            /^(?!.*(网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
+FilterNodeNoX:        &FilterNodeNoX         /^(?!.*(X|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
+FilterCloudMatch:     &FilterCloudMatch      /.*(0.4|0.5|0.6|CO|co).*/
+FilterCloudReject:    &FilterCloudReject     /^(?!.*(0.4|0.5|0.6|CO|co|网站|套餐|流量|地址|剩余|过期|免费|时间|有效|Traffic|ExpireDate|GB|Expire Date|Expiration|Remaining|SOCK|Sock|sock|HTTP|Http|HTTP|MIX|Mix|mix)).*$/
+
 
 FilterX:  &FilterX  /.*(x|X).*/
 FilterHK: &FilterHK /.*(港|HK|hk|🇭🇰).*/
@@ -32,11 +33,11 @@ listeners:
   - name: mixed1
     type: mixed
     port: 45001
-    proxy: 🇭🇰香港HKT|家宽|Socks|127.0.0.1:45001 x3
+    proxy: "🧲 Socks入口 127.0.0.1:45001"
   - name: mixed2
     type: mixed
     port: 45002
-    proxy: 🇹🇼台湾Seednet|家宽|Socks|127.0.0.1:45002 x3
+    proxy: "🧲 Socks入口 127.0.0.1:45002"
 
 mode: rule
 port: 7890
@@ -201,9 +202,13 @@ proxy-groups:
   - { name: "🇸🇬 新加坡", <<: *BaseUT, proxies: [*FilterSG] }
   - { name: "🇯🇵 日本",   <<: *BaseUT, proxies: [*FilterJP] }
   - { name: "🇺🇲 美国",   <<: *BaseUT, proxies: [*FilterUS] }
-  
+
   - { name: "🎯 全球直连", type: select, proxies: ["DIRECT", *FilterNodeNoX] }
   - { name: "🛑 广告/追踪拦截", type: select, proxies: ["REJECT", *FilterNodeNoX] }
+
+  - { name: "🧲 Socks入口 127.0.0.1:45001", type: select, proxies: [*FilterNode, "🚀 节点选择"] }
+  - { name: "🧲 Socks入口 127.0.0.1:45002", type: select, proxies: [*FilterNode, "🚀 节点选择"] }
+
 
 # ==================== 规则 ====================
 rules:
