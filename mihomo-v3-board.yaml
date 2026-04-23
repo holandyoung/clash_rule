@@ -167,8 +167,8 @@ dns:
       - https://doh.pub/dns-query#🎯 全球直连
     # 防止被污染导致请求进不到节点远程解析
     "rule-set:fcm,gfw-loyalsoldier,tiktok":
-      - https://8.8.8.8/dns-query#♻️ 自动选择
-      - https://1.1.1.1/dns-query#♻️ 自动选择
+      - https://8.8.4.4/dns-query#🚀 节点选择
+      - https://8.8.8.8/dns-query#🚀 节点选择
   # fallback:
   #   - https://8.8.8.8/dns-query#♻️ 自动选择
   #   - https://1.1.1.1/dns-query#♻️ 自动选择
@@ -196,11 +196,12 @@ proxy-groups:
   - { name: "📺 哔哩哔哩",   type: select, proxies: ["🎯 全球直连","🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
 
   # Ⓜ️ 国外网盘 需要消耗较大的流量
+  - { name: "Ⓜ️ OneDrive", type: select, proxies: [*FilterCloudMatch, "🚀 节点选择", "🎯 全球直连", *FilterCloudReject] }
   - { name: "Ⓜ️ 国外云盘", type: select, proxies: [*FilterCloudMatch, "🚀 节点选择", "🎯 全球直连", *FilterCloudReject] }
 
   # 🎮 特殊用途
   - { name: "🎮 游戏加速", type: select, proxies: ["🚀 节点选择","🎯 全球直连","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡", *FilterNode] }
-  - { name: "💵 区块链",   type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇹🇼 台湾","🇸🇬 新加坡","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡","🚀 节点选择","🇭🇰 香港", *FilterNode] }
+  - { name: "💵 区块链",   type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇹🇼 台湾","🇸🇬 新加坡","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡","🚀 节点选择", *FilterNode] }
 
   # ♻️ 智能策略 (调用基础锚点)
   - { name: "♻️ 自动选择", <<: *BaseUT, proxies: [*FilterX] }
@@ -232,20 +233,26 @@ rules:
 
   - RULE-SET,my-ad-whitelist,🎯 全球直连,no-resolve
 
+
+
+  # 广告拦截
   - RULE-SET,my-ad,🛑 广告/追踪拦截,no-resolve
   - RULE-SET,anti-ad-mihomo,🛑 广告/追踪拦截,no-resolve
   - RULE-SET,anti-ad-httpdns,🛑 广告/追踪拦截,no-resolve
   - RULE-SET,anti-ad-pcdn,🛑 广告/追踪拦截,no-resolve
+  # tg优化
+  - IP-CIDR,95.161.76.100/31,REJECT,no-resolve
+  # 阻止海外 QUIC (UDP 443)，但放行规则集中的国内 IP
+  - AND,((DST-PORT,443),(NETWORK,UDP),(NOT,((RULE-SET,cnmax-ip)))),REJECT
 
   - RULE-SET,fcm,🚀 节点选择,no-resolve
   - RULE-SET,direct,🎯 全球直连,no-resolve
   - RULE-SET,steamcn,🎯 全球直连,no-resolve
   - RULE-SET,gamedownloadcn,🎯 全球直连,no-resolve
   - RULE-SET,coolapk,🎯 全球直连,no-resolve
-  - RULE-SET,apple,🎯 全球直连,no-resolve
 
-  # tg优化
-  - IP-CIDR,95.161.76.100/31,REJECT,no-resolve
+
+
   
   - RULE-SET,youtube,📹 油管视频,no-resolve
   - RULE-SET,youtube-ip,📹 油管视频,no-resolve
@@ -255,8 +262,7 @@ rules:
   - RULE-SET,gemeni,🚀 节点选择,no-resolve
   - RULE-SET,anthropic,🚀 节点选择,no-resolve
 
-  - RULE-SET,google,🚀 节点选择,no-resolve
-  - RULE-SET,google-ip,🚀 节点选择,no-resolve
+
 
   - RULE-SET,netflix,🎥 Netflix,no-resolve
   - RULE-SET,netflix-ip,🎥 Netflix,no-resolve
@@ -268,8 +274,8 @@ rules:
   - RULE-SET,bilibiliintl,📺 哔哩哔哩,no-resolve
   - RULE-SET,bilibili,📺 哔哩哔哩,no-resolve
   
-  - RULE-SET,onedrive,Ⓜ️ 国外云盘,no-resolve
-  - RULE-SET,googledrive,Ⓜ️ 国外云盘,no-resolve
+  - RULE-SET,onedrive,Ⓜ️ OneDrive,no-resolve
+  # - RULE-SET,googledrive,Ⓜ️ 国外云盘,no-resolve
   - RULE-SET,dropbox,Ⓜ️ 国外云盘,no-resolve
   - RULE-SET,mega,Ⓜ️ 国外云盘,no-resolve
   - RULE-SET,pikpak,Ⓜ️ 国外云盘,no-resolve
@@ -283,9 +289,14 @@ rules:
   - RULE-SET,speedtest,🚀 节点选择,no-resolve
   - RULE-SET,microsoft,🚀 节点选择,no-resolve
 
+
+
   - RULE-SET,crypto,💵 区块链,no-resolve
   
-
+  - RULE-SET,google,🚀 节点选择,no-resolve
+  - RULE-SET,google-ip,🚀 节点选择,no-resolve
+  - RULE-SET,apple-cn,🎯 全球直连,no-resolve
+  - RULE-SET,apple,🚀 节点选择,no-resolve
 
   - RULE-SET,ntp,🎯 全球直连,no-resolve
   - RULE-SET,privatetracker,🎯 全球直连,no-resolve
@@ -324,6 +335,7 @@ rule-providers:
   steamcn:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/SteamCN_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/SteamCN/SteamCN_OCD_Domain.mrs" }
   coolapk:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/Coolapk_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Coolapk/Coolapk_OCD_Domain.mrs" }
   apple:                   { <<: *BehaviorDomainMRS,    path: ./ruleset/Apple_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Apple/Apple_OCD_Domain.mrs" }
+  apple-cn:                { <<: *BehaviorDomain,       path: ./ruleset/Loyalsoldier-apple-cn.txt, url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/apple-cn.txt" }
   ntp:                     { <<: *BehaviorDomainMRS,    path: ./ruleset/NTPService_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/NTPService/NTPService_OCD_Domain.mrs" }
   privatetracker:          { <<: *BehaviorDomainMRS,    path: ./ruleset/PrivateTracker_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/PrivateTracker/PrivateTracker_OCD_Domain.mrs" }
   bilibili:                { <<: *BehaviorDomainMRS,    path: ./ruleset/BiliBili_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/BiliBili/BiliBili_OCD_Domain.mrs" }
@@ -346,7 +358,7 @@ rule-providers:
   anthropic:               { <<: *BehaviorDomainMRS,    path: ./ruleset/Anthropic_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Anthropic/Anthropic_OCD_Domain.mrs" }
   gemeni:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/Gemini_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Gemini/Gemini_OCD_Domain.mrs" }
   onedrive:                { <<: *BehaviorDomainMRS,    path: ./ruleset/OneDrive_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/OneDrive/OneDrive_OCD_Domain.mrs" }
-  googledrive:             { <<: *BehaviorDomainMRS,    path: ./ruleset/GoogleDrive_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/GoogleDrive/GoogleDrive_OCD_Domain.mrs" }
+  # googledrive:             { <<: *BehaviorDomainMRS,    path: ./ruleset/GoogleDrive_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/GoogleDrive/GoogleDrive_OCD_Domain.mrs" }
   dropbox:                 { <<: *BehaviorDomainMRS,    path: ./ruleset/Dropbox_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Dropbox/Dropbox_OCD_Domain.mrs" }
   mega:                    { <<: *BehaviorDomainMRS,    path: ./ruleset/MEGA_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/MEGA/MEGA_OCD_Domain.mrs" }
   pikpak:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/PikPak_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/PikPak/PikPak_OCD_Domain.mrs" }
