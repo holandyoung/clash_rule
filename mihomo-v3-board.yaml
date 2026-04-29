@@ -186,22 +186,22 @@ proxies:
 proxy-groups:
 
   # 🚀 通用分流选择
-  - { name: "🚀 节点选择", type: select, proxies: ["♻️ 自动选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", "🔯 故障转移","🔮 负载均衡", *FilterNode] }
+  - { name: "🚀 节点选择", type: select, proxies: ["♻️ 自动选择","🇭🇰 香港","🇯🇵 日本","🇺🇲 美国", "🔯 故障转移","🔮 负载均衡", *FilterNode] }
 
   # 📹 视频类分组
-  - { name: "📹 油管视频", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
-  - { name: "🎥 Netflix", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
-  - { name: "🎥 Disney", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
-  - { name: "🎥 HBO", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
-  - { name: "📺 哔哩哔哩",   type: select, proxies: ["🎯 全球直连","🚀 节点选择","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "📹 油管视频", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "🎥 Netflix", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "🎥 Disney", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "🎥 HBO", type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
+  - { name: "📺 哔哩哔哩",   type: select, proxies: ["🎯 全球直连","🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇺🇲 美国", *FilterNode] }
 
   # Ⓜ️ 国外网盘 需要消耗较大的流量
   - { name: "Ⓜ️ OneDrive", type: select, proxies: [*FilterCloudMatch, "🚀 节点选择", "🎯 全球直连", *FilterCloudReject] }
   - { name: "Ⓜ️ 国外云盘", type: select, proxies: [*FilterCloudMatch, "🚀 节点选择", "🎯 全球直连", *FilterCloudReject] }
 
   # 🎮 特殊用途
-  - { name: "🎮 游戏加速", type: select, proxies: ["🚀 节点选择","🎯 全球直连","🇭🇰 香港","🇹🇼 台湾","🇸🇬 新加坡","🇯🇵 日本","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡", *FilterNode] }
-  - { name: "💵 区块链",   type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇹🇼 台湾","🇸🇬 新加坡","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡","🚀 节点选择", *FilterNode] }
+  - { name: "🎮 游戏加速", type: select, proxies: ["🚀 节点选择","🎯 全球直连","🇭🇰 香港","🇯🇵 日本","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡", *FilterNode] }
+  - { name: "💵 区块链",   type: select, proxies: ["🚀 节点选择","🇭🇰 香港","🇯🇵 日本","🇺🇲 美国","🔯 故障转移","♻️ 自动选择","🔮 负载均衡","🚀 节点选择", *FilterNode] }
 
   # ♻️ 智能策略 (调用基础锚点)
   - { name: "♻️ 自动选择", <<: *BaseUT, proxies: [*FilterX] }
@@ -210,8 +210,8 @@ proxy-groups:
 
   # 🌍 地区分组
   - { name: "🇭🇰 香港",   <<: *BaseUT, tolerance: 100, proxies: [*FilterHK] }
-  - { name: "🇹🇼 台湾",   <<: *BaseUT, proxies: [*FilterTW] }
-  - { name: "🇸🇬 新加坡", <<: *BaseUT, proxies: [*FilterSG] }
+  #- { name: "🇹🇼 台湾",   <<: *BaseUT, proxies: [*FilterTW] }
+  #- { name: "🇸🇬 新加坡", <<: *BaseUT, proxies: [*FilterSG] }
   - { name: "🇯🇵 日本",   <<: *BaseUT, proxies: [*FilterJP] }
   - { name: "🇺🇲 美国",   <<: *BaseUT, proxies: [*FilterUS] }
 
@@ -237,7 +237,7 @@ rules:
 
   # 广告拦截
   - RULE-SET,my-ad,🛑 广告/追踪拦截,no-resolve
-  - RULE-SET,anti-ad-mihomo,🛑 广告/追踪拦截,no-resolve
+#  - RULE-SET,anti-ad-mihomo,🛑 广告/追踪拦截,no-resolve
   - RULE-SET,anti-ad-httpdns,🛑 广告/追踪拦截,no-resolve
   - RULE-SET,anti-ad-pcdn,🛑 广告/追踪拦截,no-resolve
   # tg优化
@@ -285,6 +285,7 @@ rules:
   - RULE-SET,telegram-ip,🚀 节点选择,no-resolve
   - RULE-SET,line,🚀 节点选择,no-resolve
   - RULE-SET,whatsapp,🚀 节点选择,no-resolve
+  - RULE-SET,instagram,🚀 节点选择,no-resolve
   - RULE-SET,github,🚀 节点选择,no-resolve
   - RULE-SET,speedtest,🚀 节点选择,no-resolve
   - RULE-SET,microsoft,🚀 节点选择,no-resolve
@@ -367,6 +368,7 @@ rule-providers:
   telegram-ip:             { <<: *BehaviorIPCIDRMRS,    path: ./ruleset/Telegram_OCD_IP.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Telegram/Telegram_OCD_IP.mrs" }
   line:                    { <<: *BehaviorDomainMRS,    path: ./ruleset/Line_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Line/Line_OCD_Domain.mrs" }
   whatsapp:                { <<: *BehaviorDomainMRS,    path: ./ruleset/Whatsapp_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Whatsapp/Whatsapp_OCD_Domain.mrs" }
+  instagram:               { <<: *BehaviorDomainMRS,    path: ./ruleset/Instagram_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Instagram/Instagram_OCD_Domain.mrs" }
   tiktok:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/TikTok_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/TikTok/TikTok_OCD_Domain.mrs" }
   github:                  { <<: *BehaviorDomainMRS,    path: ./ruleset/GitHub_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/GitHub/GitHub_OCD_Domain.mrs" }
   speedtest:               { <<: *BehaviorDomainMRS,    path: ./ruleset/Speedtest_OCD_Domain.mrs, url: "https://cdn.jsdelivr.net/gh/peiyingyao/Rule-for-OCD@master/rule/Clash/Speedtest/Speedtest_OCD_Domain.mrs" }
